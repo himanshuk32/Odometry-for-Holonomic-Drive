@@ -5,26 +5,24 @@ float dist(float x1,float y1,float x2,float y2)
 
 float angle(float x1,float y1,float x2,float y2)
 {
+  int tolerance=50000;
+  if(abs(x2-x1)<tolerance)
   return atan2((y2-y1),(x2-x1));
+  else
+  return pi/2;
 }
 
 void ScaleWheels(float maximum)
 {
-  int n;
-  #ifdef FourWheelDrive
-  n=4;
-  #else
-  n=3;
-  #endif
   
   float maxR=pWheel[0]->rpm;
-  for(int i=0;i<n;++i)
+  for(int i=0;i<3;++i)
   {
     if(pWheel[i]->rpm>maxR)
     maxR=pWheel[i]->rpm;
   }
   if(maxR>maximum)
-  for(int i=0;i<n;++i)
+  for(int i=0;i<3;++i)
   {
     pWheel[i]->rpm*=maximum/maxR;
   }
