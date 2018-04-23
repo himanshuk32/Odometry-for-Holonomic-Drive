@@ -50,18 +50,33 @@ void GOTO_XY( float x1,float y1,float x2,float y2,float V0)
   float angleAct = angle ( pBot->X_pos, pBot->Y_pos, x1, y1);
   float angleReqOP = angle ( pBot->X_pos, pBot->Y_pos, x2, y2);
   
+  pBot->Angle = angleReqOP;
+  
   float  r = dist ( x1, y1 , pBot->X_pos, pBot->Y_pos );
   float r0 = dist ( x1, y1, x2, y2 );
-  
+
+  float tolerance=0.03;
   pBot->vel = V0;
-  if( r> 2*r0/3 && r< r0)
-  pBot->vel=V0/3;
+
   if( r>r0 )
+  {
+    pBot->vel = - 2*V0/3;
+    pBot->Angle  = pi + angleReqOP;
+  }
+
+  if( abs(r-r0) < tolerance )
   pBot->vel = 0;
-  pBot->Angle = angleReqOP;
+
+  
  // Serial.println("ActualAngle "+String(RadianToDegree(angleAct))+" RequiredNow "+ String(RadianToDegree(angleReqOP)));
 }
 
+void Circle(float radius, float V0)
+{
+  
+  GOTO_XY ( radius*cos(Circle_theta) , radius + radius*sin(Circle_theta), radius*cos(Circle_theta+0.01) , radius + radius*sin(Circle_theta+0.01) , V0 ); 
+  Circle_theta+=0.01;
+}
 void calculateRPM(float Omega,float angle,float Vtranslational)
 {
   int r=1;
@@ -72,10 +87,10 @@ void calculateRPM(float Omega,float angle,float Vtranslational)
     pWheel[i]->rpm = pWheel[i]->translationRPM + pWheel[i]->angularRPM;
   }
  // ScaleWheels(MAXRPM);
-  FormalityForPID();
+  MotorRequiredPID();
 }
 
-void FormalityForPID()
+void MotorRequiredPID()
 {
   pPIDMotor1->prevRequired = pPIDMotor1->required;
   pPIDMotor2->prevRequired = pPIDMotor2->required;

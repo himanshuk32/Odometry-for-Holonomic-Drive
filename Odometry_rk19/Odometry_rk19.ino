@@ -21,7 +21,8 @@
 #define Angle2 210  //3.66519  //210      //90+120
 #define Angle3 330  //5.75958  //330      //90+240
 
-
+float temp[4];
+float output[4];
 /*********************************************************************************************************************************************/
 /*********************************************   Encoders ************************************************************************************************/
 class Encoder
@@ -159,8 +160,7 @@ Auto_Bot ThreeWheelDrive={0,0,0,0,0};
 Auto_Bot *pBot=&ThreeWheelDrive;
 
 /*********************************************************************************************************************************************/
-float temp[4];
-float output[4];
+float Circle_theta=0;
 void setup() {
   Serial.begin(9600);
  
@@ -176,9 +176,9 @@ void setup() {
   pMotor2->initMotor();
   pMotor3->initMotor();
   
-  pPIDMotor1->initPID(0.4,0.0,0.0,0,-MAXRPM,MAXRPM);
-  pPIDMotor2->initPID(0.4,0.0,0.0,0,-MAXRPM,MAXRPM);
-  pPIDMotor3->initPID(0.4,0.0,0.0,0,-MAXRPM,MAXRPM);
+  pPIDMotor1->initPID(0.3,0.01,0.118,0,-MAXRPM,MAXRPM);
+  pPIDMotor2->initPID(0.3,0.01,0.118,0,-MAXRPM,MAXRPM);
+  pPIDMotor3->initPID(0.3,0.01,0.118,0,-MAXRPM,MAXRPM);
 
   pEncoderX->initEncoder();
   attachInterrupt(pEncoderX->channel1,returnCountX,RISING);
@@ -193,12 +193,11 @@ void setup() {
 
 
 void loop() {
- int i=3;
+ float i=1.5;
  getBotPosition();
- GOTO_XY(0,0,2,4,100*i);
+ //GOTO_XY(0,0,2,4,100*i);
+ Circle(2.5,150);
  calculateRPM(0,pBot->Angle,pBot->vel);
-
- 
 }
 
 void timerHandler()
@@ -209,7 +208,7 @@ void timerHandler()
   pEncoder1->prevCount=pEncoder1->Count;
   pEncoder2->prevCount=pEncoder2->Count;
   pEncoder3->prevCount=pEncoder3->Count;
-  
+
   if(pPIDMotor1->required*pPIDMotor1->prevRequired>0)
   {
     temp[0]=pPIDMotor1->pidControl((pEncoder1->rpm));
