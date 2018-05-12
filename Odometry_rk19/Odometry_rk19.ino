@@ -161,6 +161,7 @@ Auto_Bot *pBot=&ThreeWheelDrive;
 
 /*********************************************************************************************************************************************/
 float Circle_theta=0;
+
 void setup() {
   Serial.begin(9600);
  
@@ -193,10 +194,9 @@ void setup() {
 
 
 void loop() {
- float i=1.5;
  getBotPosition();
- //GOTO_XY(0,0,2,4,100*i);
- Circle(2.5,150);
+ Goto_XYSigmoid( 0,0,4,4,150 );
+ //CircleLogic1(1.335,200);
  calculateRPM(0,pBot->Angle,pBot->vel);
 }
 

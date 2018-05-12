@@ -6,12 +6,29 @@ float dist(float x1,float y1,float x2,float y2)
 float angle(float x1,float y1,float x2,float y2)
 {
   int tolerance=50000;
-  if(abs(x2-x1)<tolerance)
+  if( (x2-x1)==0 && (y2-y1)==0)
+  return 0;
+  if( abs(x2-x1) < tolerance )
   return atan2((y2-y1),(x2-x1));
   else
   return pi/2;
 }
 
+float sigmoid (float x , float tau)
+{
+  return (1/(1+exp(-x/tau))); 
+}
+
+float modified_sigmoid (float x, float tau, float whole_length)
+{
+   int constant = 5;
+   if ( x < constant * tau )
+   return sigmoid(x,tau);
+   if ( x > constant * tau && x < whole_length - constant * tau )
+   return 1;
+   if ( x > whole_length - constant * tau )
+   return sigmoid(-(x-(whole_length - constant * tau)),tau);;
+}
 void ScaleWheels(float maximum)
 {
   
@@ -27,4 +44,5 @@ void ScaleWheels(float maximum)
     pWheel[i]->rpm*=maximum/maxR;
   }
 }
+
 
