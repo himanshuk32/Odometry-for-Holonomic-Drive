@@ -19,15 +19,17 @@ float sigmoid (float x , float tau)
   return (1/(1+exp(-x/tau))); 
 }
 
-float modified_sigmoid (float x, float tau, float whole_length)
+float trapezoid_sigmoid (float x, float tau, float whole_length)
 {
    int constant = 5;
    if ( x < constant * tau )
    return sigmoid(x,tau);
-   if ( x > constant * tau && x < whole_length - constant * tau )
-   return 1;
-   if ( x > whole_length - constant * tau )
-   return sigmoid(-(x-(whole_length - constant * tau)),tau);;
+   else if ( x > constant * tau && x < whole_length - constant * tau )
+        return 1;
+        else if ( x > whole_length - constant * tau && x < whole_length )
+             return sigmoid(-(x-whole_length),tau);
+   if ( x >= whole_length)
+   return 0;
 }
 void ScaleWheels(float maximum)
 {

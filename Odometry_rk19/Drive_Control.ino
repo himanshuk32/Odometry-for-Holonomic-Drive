@@ -20,18 +20,18 @@
     digitalWrite(direction2,HIGH);
     digitalWrite(direction1,HIGH);
   }
-  op=(op*maxPWM)/maxval;
+
+  if(printPIDOutput)
+  Serial.println(" PID Output "+String(op));
+  op=(op*maxPWM)/maxMotRPM;
   
   analogWrite(pwmPin,(int)op);
 }
 
 void getIndidualDistances()
 {
-      
-   pWheel[0]->distance=EncoderGearRatio*pEncoder1->Count*2*pi*pWheel[0]->Radius/pEncoder1->ppr;
-   pWheel[1]->distance=EncoderGearRatio*pEncoder2->Count*2*pi*pWheel[1]->Radius/pEncoder2->ppr;
-   pWheel[2]->distance=EncoderGearRatio*pEncoder3->Count*2*pi*pWheel[2]->Radius/pEncoder3->ppr;
- 
+   for(int i=0;i<3;++i)
+   pWheel[i]->distance=GearRatio*pEncoder[i]->Count*2*pi*pWheel[i]->Radius/pEncoder[i]->ppr;
 }
 void getBotPosition()
 {
@@ -41,6 +41,8 @@ void getBotPosition()
    pBot->Y_pos = pEncoderY->Count*2*pi*CastorWheelYradius/pEncoderY->ppr;
    pBot->X_pos*=constX;
    pBot->Y_pos*=constY;
+
+   if(printXY)
    Serial.println("X :  "+String(pBot->X_pos)+"     Y:  "+String(pBot->Y_pos));
 }
 
@@ -50,11 +52,11 @@ void calculateRPM( float Omega , float angle , float Vtranslational )
   int r=1;
   for(int i=0;i<3;++i)
   {
-    pWheel[i]->translationRPM = (3*Vtranslational/2)*sin(DegreeToRadian(pWheel[i]->angle)-angle);
+    pWheel[i]->translationRPM = Vtranslational*sin(DegreeToRadian(pWheel[i]->angle)-angle);
     pWheel[i]->angularRPM = Omega*r;
     pWheel[i]->rpm = pWheel[i]->translationRPM + pWheel[i]->angularRPM;
   }
-  ScaleWheels(MAXRPM);
+  ScaleWheels(maxWheelRPM);
   MotorRequiredPID();
 }
 

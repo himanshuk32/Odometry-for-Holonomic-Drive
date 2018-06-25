@@ -3,12 +3,20 @@
 #include <DuePWM.h>
 
 /*********************************************************************************************************************************************/
+/********************************************* Serial Print ************************************************************************************************/
+#define printXY 0
+#define printLineAngleSpeed 1
+#define printCircleAngleSpeed 0
+#define printPIDOutput 0
+
+/*********************************************************************************************************************************************/
 /*********************************************  Functions and variables definiton ************************************************************************************************/
 
 #define TimerEncoder Timer1
 #define EncoderTime 0.1 
-#define EncoderGearRatio 0.89
-#define MAXRPM 400
+#define GearRatio 0.89
+#define maxWheelRPM 300
+#define maxMotRPM 468
 #define maxPWM 255
 #define PWM_FREQ1 2500
 #define pi 3.141592
@@ -31,7 +39,7 @@ class Encoder
   int channel1;
   int channel2;
   int ppr;
-  long int Count;
+  long long int Count;
   long long int prevCount;
   int rpm;
 
@@ -41,15 +49,12 @@ class Encoder
    }
 };
 
-  Encoder encoder1={41,43,135,0,0,0};
-  Encoder *pEncoder1=&encoder1;
-
-  Encoder encoder2={45,47,135,0,0,0};
-  Encoder *pEncoder2=&encoder2;
-
-  Encoder encoder3={49,51,135,0,0,0};
-  Encoder *pEncoder3=&encoder3;
-
+  Encoder encoder1={41,43,135,0,0,0} , *pEncoder1=&encoder1;
+  Encoder encoder2={45,47,135,0,0,0} , *pEncoder2=&encoder2;
+  Encoder encoder3={49,51,135,0,0,0} , *pEncoder3=&encoder3;
+  
+  Encoder *pEncoder[3]={&encoder1,&encoder2,&encoder3};
+  
   Encoder xencoder={52,50,2000,0,0,0};
   Encoder *pEncoderX=&xencoder;
   
@@ -87,25 +92,25 @@ class Motor{
 
   Motor motor3={39,5,37};
   Motor *pMotor3=&motor3;
-
   
+  Motor *pMotor[3]={&motor1,&motor2,&motor3};
  /*********************************************************************************************************************************************/
  /******************************************************       PID          ***************************************************************************************/
 class PID{
+   float Kp;
+   float Kd;
+   float Ki;
+   float maxControl;
+   float minControl;
   public:
-  float Kp;
-  float Kd;
-  float Ki;
-  float required;
-  float prevRequired;
-  float maxControl;
-  float minControl;
-  float error;
-  float prevError;
-  float derivativeError;
-  float integralError;
-  void initPID(float kp,float kd,float ki,float req,float minV,float maxV);
-  float pidControl(float actual);
+   float required;
+   float prevRequired;
+   float error;
+   float prevError;
+   float derivativeError;
+   float integralError;
+   void initPID(float kp,float kd,float ki,float req,float minV,float maxV);
+   float pidControl(float actual);
   
 };
  
@@ -119,6 +124,8 @@ class PID{
 
   PID PIDMotor3;
   PID *pPIDMotor3=&PIDMotor3;
+
+  PID *pPIDMotor[3]={&PIDMotor1,&PIDMotor2,&PIDMotor3};
 /*********************************************************************************************************************************************/
 /*********************************************************** Wheels **********************************************************************************/
 class Wheel{
@@ -137,11 +144,11 @@ class Wheel{
  float CastorWheelXradius=0.05;
  float CastorWheelYradius=0.05;
  
- Wheel Wheel1 = {0.0, 0.0, 0.1, Angle1, MAXRPM, 0, 0, 0.0, 0.0};
+ Wheel Wheel1 = {0.0, 0.0, 0.1, Angle1, maxWheelRPM, 0, 0, 0.0, 0.0};
  
- Wheel Wheel2 = {0.0, 0.0, 0.1, Angle2, MAXRPM, 0, 0, 0.0, 0.0};
+ Wheel Wheel2 = {0.0, 0.0, 0.1, Angle2, maxWheelRPM, 0, 0, 0.0, 0.0};
  
- Wheel Wheel3 = {0.0, 0.0, 0.1, Angle3, MAXRPM, 0, 0, 0.0, 0.0};
+ Wheel Wheel3 = {0.0, 0.0, 0.1, Angle3, maxWheelRPM, 0, 0, 0.0, 0.0};
 
  Wheel *pWheel[3]={&Wheel1,&Wheel2,&Wheel3};
  
@@ -155,8 +162,16 @@ class Auto_Bot{
   float X_vel;
   float Y_vel;
   float vel;
+  Auto_Bot(){
+             X_pos = 0;
+             Y_pos = 0;
+             Angle = 0;
+             X_vel = 0;
+             Y_vel = 0;
+             vel = 0;
+            }
 };
-Auto_Bot ThreeWheelDrive={0,0,0,0,0};
+Auto_Bot ThreeWheelDrive;
 Auto_Bot *pBot=&ThreeWheelDrive;
 
 /*********************************************************************************************************************************************/
@@ -165,21 +180,19 @@ float Circle_theta=0;
 void setup() {
   Serial.begin(9600);
  
-  pEncoder1->initEncoder();
-  pEncoder2->initEncoder();
-  pEncoder3->initEncoder();
-
-  attachInterrupt(pEncoder1->channel1,returnCount1,RISING);
+  for(int i=0;i<3;++i)
+  pEncoder[i]->initEncoder();
+  
+  attachInterrupt(pEncoder1->channel1,returnCount1,RISING);   
   attachInterrupt(pEncoder2->channel1,returnCount2,RISING);
   attachInterrupt(pEncoder3->channel1,returnCount3,RISING);
 
-  pMotor1->initMotor();
-  pMotor2->initMotor();
-  pMotor3->initMotor();
+  for(int i=0;i<3;++i)
+  pMotor[i]->initMotor();
   
-  pPIDMotor1->initPID(0.3,0.01,0.118,0,-MAXRPM,MAXRPM);
-  pPIDMotor2->initPID(0.3,0.01,0.118,0,-MAXRPM,MAXRPM);
-  pPIDMotor3->initPID(0.3,0.01,0.118,0,-MAXRPM,MAXRPM);
+  pPIDMotor1->initPID(0.3,0.01,0.118,0,-maxWheelRPM,maxWheelRPM);
+  pPIDMotor2->initPID(0.3,0.01,0.118,0,-maxWheelRPM,maxWheelRPM);		
+  pPIDMotor3->initPID(0.3,0.01,0.118,0,-maxWheelRPM,maxWheelRPM);
 
   pEncoderX->initEncoder();
   attachInterrupt(pEncoderX->channel1,returnCountX,RISING);
@@ -195,59 +208,39 @@ void setup() {
 
 void loop() {
  getBotPosition();
- Goto_XYSigmoid( 0,0,4,4,150 );
- //CircleLogic1(1.335,200);
+// Goto_XYLogic1(0,0,4.56,0.58,200);
+ Goto_XYSigmoid(0,0,4.56,1.5,200);
  calculateRPM(0,pBot->Angle,pBot->vel);
 }
 
 void timerHandler()
 {
-  pEncoder1->rpm=((pEncoder1->Count - pEncoder1->prevCount) * 60.0)/(EncoderTime * EncoderGearRatio * pEncoder1->ppr);
-  pEncoder2->rpm=((pEncoder2->Count - pEncoder2->prevCount) * 60.0)/(EncoderTime * EncoderGearRatio * pEncoder2->ppr);
-  pEncoder3->rpm=((pEncoder3->Count - pEncoder3->prevCount) * 60.0)/(EncoderTime * EncoderGearRatio * pEncoder3->ppr);
-  pEncoder1->prevCount=pEncoder1->Count;
-  pEncoder2->prevCount=pEncoder2->Count;
-  pEncoder3->prevCount=pEncoder3->Count;
-
-  if(pPIDMotor1->required*pPIDMotor1->prevRequired>0)
+  for(int i=0;i<3;++i)
+  pEncoder[i]->rpm=((pEncoder[i]->Count - pEncoder[i]->prevCount) * 60.0)/(EncoderTime * GearRatio * pEncoder[i]->ppr);
+  
+  for(int i=0;i<3;++i)
   {
-    temp[0]=pPIDMotor1->pidControl((pEncoder1->rpm));
-    output[0]=temp[0];
-  }
-  else
-  {
-    pPIDMotor1->prevRequired=pPIDMotor1->required;
-    output[0]=0;
-  }
-  if(pPIDMotor2->required*pPIDMotor2->prevRequired>0)
-  {
-    temp[1]=pPIDMotor2->pidControl((pEncoder2->rpm));
-    output[1]=temp[1];
-  }
-  else
-  {
-    pPIDMotor2->prevRequired=pPIDMotor2->required;
-    output[1]=0;
-  }
-  if(pPIDMotor3->required*pPIDMotor3->prevRequired>0)
-  {
-    temp[2]=pPIDMotor3->pidControl((pEncoder3->rpm));
-    output[2]=temp[2];
-  }
-  else
-  {
-    pPIDMotor3->prevRequired=pPIDMotor3->required;
-    output[2]=0;
+    if(pPIDMotor[i]->required*pPIDMotor[i]->prevRequired>0)
+    {
+      output[i]=pPIDMotor[i]->pidControl((pEncoder[i]->rpm));
+    }
+    else
+    {
+     pPIDMotor[i]->prevRequired=pPIDMotor[i]->required;
+     output[i]=0;
+    }
   }
 
-  if(pPIDMotor1->required==0) output[0]=0;
-  if(pPIDMotor2->required==0) output[1]=0;
-  if(pPIDMotor3->required==0) output[2]=0;
+  for(int i=0;i<3;++i)
+  if(pPIDMotor[i]->required==0) 
+  output[i]=0;
+ 
+  pMotor1->driveMotor(output[0],maxMotRPM/2);
+  pMotor2->driveMotor(output[1],maxMotRPM/2);
+  pMotor3->driveMotor(output[2],maxMotRPM/2);
 
-
-  pMotor1->driveMotor(output[0],MAXRPM/2);
-  pMotor2->driveMotor(output[1],MAXRPM/2);
-  pMotor3->driveMotor(output[2],MAXRPM/2);
+  for(int i=0;i<3;++i)
+  pEncoder[i]->prevCount=pEncoder[i]->Count;
 }
 
 void returnCount1()
