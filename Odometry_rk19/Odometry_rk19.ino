@@ -5,25 +5,28 @@
 /*********************************************************************************************************************************************/
 /********************************************* Serial Print ************************************************************************************************/
 #define printXY 0
-#define printLineAngleSpeed 1
+#define printLineAngleSpeed 0
 #define printCircleAngleSpeed 0
 #define printPIDOutput 0
+#define TimedCircle
 
 /*********************************************************************************************************************************************/
 /*********************************************  Functions and variables definiton ************************************************************************************************/
 
 #define TimerEncoder Timer1
 #define EncoderTime 0.1 
-#define GearRatio 0.89
+#define Omega_Timer 1/EncoderTime
+#define GearRatio 1.33
 #define maxWheelRPM 300
 #define maxMotRPM 468
 #define maxPWM 255
-#define PWM_FREQ1 2500
 #define pi 3.141592
 #define root3by2 0.86602
 #define onebyroot2 0.7071
 #define DegreeToRadian(x) x*0.0174532
 #define RadianToDegree(x) x*57.295779
+#define PWM_FREQ1 2500
+DuePWM pwm(PWM_FREQ1, 3000);
 
 #define Angle1 90   //1.57079  //90       //90+0
 #define Angle2 210  //3.66519  //210      //90+120
@@ -39,8 +42,8 @@ class Encoder
   int channel1;
   int channel2;
   int ppr;
-  long long int Count;
-  long long int prevCount;
+  volatile long long int Count;
+  volatile long long int prevCount;
   int rpm;
 
   void initEncoder(){
@@ -55,10 +58,10 @@ class Encoder
   
   Encoder *pEncoder[3]={&encoder1,&encoder2,&encoder3};
   
-  Encoder xencoder={52,50,2000,0,0,0};
+  Encoder xencoder={/*52,50*/18,15,2000,0,0,0};
   Encoder *pEncoderX=&xencoder;
   
-  Encoder yencoder={48,46,2000,0,0,0};
+  Encoder yencoder={/*48,46*/14,5,2000,0,0,0};
   Encoder *pEncoderY=&yencoder;
   
   void returnCount1();
@@ -84,16 +87,17 @@ class Motor{
   void driveMotor(float op,float maxvalue);
 };
 
-  Motor motor1={29,3,23};
+  Motor motor1={29,8,23};
   Motor *pMotor1=&motor1;
 
-  Motor motor2={25,4,27};
+  Motor motor2={25,7,27};
   Motor *pMotor2=&motor2;
 
-  Motor motor3={39,5,37};
+  Motor motor3={39,6,37};
   Motor *pMotor3=&motor3;
   
   Motor *pMotor[3]={&motor1,&motor2,&motor3};
+   
  /*********************************************************************************************************************************************/
  /******************************************************       PID          ***************************************************************************************/
 class PID{
@@ -114,8 +118,6 @@ class PID{
   
 };
  
-  
-  
   PID PIDMotor1;
   PID *pPIDMotor1=&PIDMotor1;
 
@@ -126,6 +128,7 @@ class PID{
   PID *pPIDMotor3=&PIDMotor3;
 
   PID *pPIDMotor[3]={&PIDMotor1,&PIDMotor2,&PIDMotor3};
+ 
 /*********************************************************************************************************************************************/
 /*********************************************************** Wheels **********************************************************************************/
 class Wheel{
@@ -171,8 +174,16 @@ class Auto_Bot{
              vel = 0;
             }
 };
-Auto_Bot ThreeWheelDrive;
-Auto_Bot *pBot=&ThreeWheelDrive;
+
+  Auto_Bot ThreeWheelDrive; 
+  Auto_Bot *pBot=&ThreeWheelDrive;
+
+  PID pidX;
+  PID *ppidX = &pidX;
+  PID pidY;
+  PID *ppidY = &pidY;
+  PID pid_theta;
+  PID *ppid_theta = &pid_theta;
 
 /*********************************************************************************************************************************************/
 float Circle_theta=0;
@@ -189,11 +200,16 @@ void setup() {
 
   for(int i=0;i<3;++i)
   pMotor[i]->initMotor();
-  
-  pPIDMotor1->initPID(0.3,0.01,0.118,0,-maxWheelRPM,maxWheelRPM);
-  pPIDMotor2->initPID(0.3,0.01,0.118,0,-maxWheelRPM,maxWheelRPM);		
-  pPIDMotor3->initPID(0.3,0.01,0.118,0,-maxWheelRPM,maxWheelRPM);
 
+  pwm.setFreq1(PWM_FREQ1);
+ 
+  for(int i=0;i<3;++i)
+  pwm.pinFreq1(pMotor[i]->pwmPin);
+  
+  pPIDMotor1->initPID(0.3,0.01,0.118,0,-maxMotRPM,maxMotRPM);
+  pPIDMotor2->initPID(0.3,0.01,0.118,0,-maxMotRPM,maxMotRPM);		
+  pPIDMotor3->initPID(0.3,0.01,0.118,0,-maxMotRPM,maxMotRPM);
+  
   pEncoderX->initEncoder();
   attachInterrupt(pEncoderX->channel1,returnCountX,RISING);
 
@@ -207,40 +223,16 @@ void setup() {
 
 
 void loop() {
- getBotPosition();
-// Goto_XYLogic1(0,0,4.56,0.58,200);
- Goto_XYSigmoid(0,0,4.56,1.5,200);
- calculateRPM(0,pBot->Angle,pBot->vel);
+
 }
 
 void timerHandler()
 {
-  for(int i=0;i<3;++i)
-  pEncoder[i]->rpm=((pEncoder[i]->Count - pEncoder[i]->prevCount) * 60.0)/(EncoderTime * GearRatio * pEncoder[i]->ppr);
-  
-  for(int i=0;i<3;++i)
-  {
-    if(pPIDMotor[i]->required*pPIDMotor[i]->prevRequired>0)
-    {
-      output[i]=pPIDMotor[i]->pidControl((pEncoder[i]->rpm));
-    }
-    else
-    {
-     pPIDMotor[i]->prevRequired=pPIDMotor[i]->required;
-     output[i]=0;
-    }
-  }
-
-  for(int i=0;i<3;++i)
-  if(pPIDMotor[i]->required==0) 
-  output[i]=0;
- 
-  pMotor1->driveMotor(output[0],maxMotRPM/2);
-  pMotor2->driveMotor(output[1],maxMotRPM/2);
-  pMotor3->driveMotor(output[2],maxMotRPM/2);
-
-  for(int i=0;i<3;++i)
-  pEncoder[i]->prevCount=pEncoder[i]->Count;
+  getactualRPM(pEncoder);
+  setOutput(pEncoder, pPIDMotor, pMotor,maxMotRPM/2);
+  #ifdef TimedCircle
+  CircleWithTime(3.3, Omega_Timer, millis());  
+  #endif
 }
 
 void returnCount1()

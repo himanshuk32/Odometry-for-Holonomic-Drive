@@ -19,8 +19,9 @@ float sigmoid (float x , float tau)
   return (1/(1+exp(-x/tau))); 
 }
 
-float trapezoid_sigmoid (float x, float tau, float whole_length)
+float trapezoid_sigmoid (float x, float whole_length)
 {
+   float tau = whole_length / 20;
    int constant = 5;
    if ( x < constant * tau )
    return sigmoid(x,tau);
@@ -30,6 +31,11 @@ float trapezoid_sigmoid (float x, float tau, float whole_length)
              return sigmoid(-(x-whole_length),tau);
    if ( x >= whole_length)
    return 0;
+}
+
+float floatModulo(float x, float M)
+{
+  return x - M*(int)(x/M);
 }
 void ScaleWheels(float maximum)
 {

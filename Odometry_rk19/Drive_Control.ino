@@ -1,5 +1,9 @@
- void Motor::driveMotor(float op,float maxval)
-{     
+ void Motor::driveMotor(float op, float maxval)
+{ 
+  
+  if(printPIDOutput)
+  Serial.println(" PID Output "+String(op));
+      
   if(op>maxval)
   op=maxval;
   if(op<-maxval)
@@ -21,11 +25,9 @@
     digitalWrite(direction1,HIGH);
   }
 
-  if(printPIDOutput)
-  Serial.println(" PID Output "+String(op));
   op=(op*maxPWM)/maxMotRPM;
   
-  analogWrite(pwmPin,(int)op);
+  pwm.pinDuty(pwmPin,(int)op);
 }
 
 void getIndidualDistances()
@@ -35,19 +37,16 @@ void getIndidualDistances()
 }
 void getBotPosition()
 {
-  float constX=1.20;
-  float constY=1.16;
+  //float constX=1, constY=1;
    pBot->X_pos = pEncoderX->Count*2*pi*CastorWheelXradius/pEncoderX->ppr;
    pBot->Y_pos = pEncoderY->Count*2*pi*CastorWheelYradius/pEncoderY->ppr;
-   pBot->X_pos*=constX;
-   pBot->Y_pos*=constY;
-
+   //pBot->X_pos*=constX;
+   //pBot->Y_pos*=constY;
    if(printXY)
    Serial.println("X :  "+String(pBot->X_pos)+"     Y:  "+String(pBot->Y_pos));
 }
 
-
-void calculateRPM( float Omega , float angle , float Vtranslational )
+void calculateRPM(float Omega , float angle , float Vtranslational )
 {
   int r=1;
   for(int i=0;i<3;++i)
