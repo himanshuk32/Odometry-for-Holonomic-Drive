@@ -35,6 +35,17 @@ void Goto_XYSigmoid( float x1,float y1,float x2,float y2,float V0)
   Serial.println(" Angle "+ String(RadianToDegree(pBot->Angle))+ " Speed "+String(pBot->vel));
 }
 
+void Goto_XYTimed(float x1, float y1, float x2, float y2, float V0, long long int currentTime)
+{
+  float t = currentTime/1000;
+  float angleReqOP = angle ( pBot->X_pos, pBot->Y_pos, x2, y2);
+  pBot->Angle = angleReqOP;
+  
+  float  r = dist ( x1, y1 , pBot->X_pos, pBot->Y_pos );
+  float r0 = dist ( x1, y1, x2, y2 );
+
+  //DO WE NEED????????????????????????????????????????????????????????????????
+}
 
 void CircleLogic1(float radius, float V0)
 {
@@ -62,3 +73,15 @@ void CircleWithTime(float radius, int t_omega, long long int currentTime)
    float angle = floatModulo(t_omega*t-pi/2,2*pi);
    calculateRPM(0 ,angle ,v);
 }
+
+void CircularArc(float radius, int t_omega, int ArcAngle, long long int currentTime)
+{
+  float t = currentTime/1000;
+  float theta = DegreeToRadian(ArcAngle);
+  float r = dist(0, 0, pBot->X_pos, pBot->Y_pos);    //Gotta change the initial coordinates
+  float current_theta = 2 * asin( r / (2*radius));
+  float v = t_omega * radius * trapezoid_sigmoid(current_theta, theta);
+  float angleBot = floatModulo(t_omega*t-pi/2,2*pi);
+  calculateRPM(0 ,angleBot ,v);
+}
+

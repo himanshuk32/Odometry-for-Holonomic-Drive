@@ -14,13 +14,13 @@
 /*********************************************  Functions and variables definiton ************************************************************************************************/
 
 #define TimerEncoder Timer1
-#define EncoderTime 0.1 
-#define Omega_Timer 1/EncoderTime
+#define EncoderTime 0.1
+#define pi 3.141592 
+#define Omega_Timer 2*pi/EncoderTime
 #define GearRatio 1.33
 #define maxWheelRPM 300
 #define maxMotRPM 468
 #define maxPWM 255
-#define pi 3.141592
 #define root3by2 0.86602
 #define onebyroot2 0.7071
 #define DegreeToRadian(x) x*0.0174532
@@ -70,7 +70,6 @@ class Encoder
  
   void returnCountX();
   void returnCountY();
- 
   
  /*********************************************************************************************************************************************/
  /***************************************************      Motors          ******************************************************************************************/
@@ -223,55 +222,15 @@ void setup() {
 
 
 void loop() {
-
+  getBotPosition();
 }
 
 void timerHandler()
 {
   getactualRPM(pEncoder);
-  setOutput(pEncoder, pPIDMotor, pMotor,maxMotRPM/2);
+  setOutput(pEncoder, pPIDMotor, pMotor, maxMotRPM/2);
   #ifdef TimedCircle
   CircleWithTime(3.3, Omega_Timer, millis());  
   #endif
 }
-
-void returnCount1()
-  {
-    if(digitalRead(pEncoder1->channel2))
-    pEncoder1->Count++;
-    else 
-    pEncoder1->Count--;
-  }
-
-void returnCount2()
-  {
-    if(digitalRead(pEncoder2->channel2))
-    pEncoder2->Count++;
-    else 
-    pEncoder2->Count--;
-  }
-
-void returnCount3()
-  {
-    if(digitalRead(pEncoder3->channel2))
-    pEncoder3->Count--;
-    else 
-    pEncoder3->Count++;
-  }
-
-  void returnCountX()
-  {
-    if(digitalRead(pEncoderX->channel2))
-    pEncoderX->Count++;
-    else 
-    pEncoderX->Count--;
-  }
-  
-  void returnCountY()
-  {
-    if(digitalRead(pEncoderY->channel2))
-    pEncoderY->Count--;
-    else 
-    pEncoderY->Count++;
-  }
 
