@@ -8,7 +8,21 @@ void calculateSpeed(float Omega , float angle , float Vtranslational )     //Ome
     pWheel[i]->rpm = VelocityToRPM(pWheel[i]->Speed); 
   }
 
-  ScaleWheels(maxWheelRPM);
+  ScaleWheels(maxMotRPM);
 }
 
+void getBotPosition()
+{
+  float constX = 1.0;
+  float constY = 1.0;
+  pBot->X_pos = (pEncoderX->Count * 2 * pi * RadiusXYWheel / pEncoderX->ppr);
+  pBot->Y_pos = (pEncoderY->Count * 2 * pi * RadiusXYWheel / pEncoderY->ppr);
+  pBot->X_pos *= constX;
+  pBot->Y_pos *= constY;
+  if(printXY)
+ { 
+   Serial.println("X:   "+String(pBot->X_pos));
+   Serial.println("Y:   "+String(pBot->Y_pos));
+ }
+}
 

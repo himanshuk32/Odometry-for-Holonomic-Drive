@@ -38,16 +38,16 @@ float floatModulo(float x, float M)
 void ScaleWheels(float maximum)
 {
   
-  float maxR=pWheel[0]->rpm;
-  for(int i=0;i<3;++i)
+  float maxR = abs(pWheel[0]->rpm);
+  for(int i=0;i<4;++i)
   {
-    if(pWheel[i]->rpm>maxR)
-    maxR=pWheel[i]->rpm;
+    if(abs(pWheel[i]->rpm)>maxR)
+    maxR = abs(pWheel[i]->rpm);
   }
-  if(maxR>maximum)
-  for(int i=0;i<3;++i)
+  if(maxR > maximum)
+  for(int i=0;i<4;++i)
   {
-    pWheel[i]->rpm*=maximum/maxR;
+    pWheel[i]->rpm *= maximum/maxR;
   }
 }
 

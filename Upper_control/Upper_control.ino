@@ -1,10 +1,6 @@
 #include <EasyTransfer.h>
 
 #define printXY 1
-#define printLineAngleSpeed 0
-#define printCircleAngleSpeed 0
-#define printPIDOutput 0
-
 
 EasyTransfer ET;
 struct DATASTRUCT{
@@ -12,10 +8,9 @@ struct DATASTRUCT{
 }; 
 DATASTRUCT mydata;
 
-#define UsartSerial Serial3
+#define UpperLowerSerial Serial3
 #define pi 3.141592 
 #define Omega_Timer 2*pi/EncoderTime
-#define GearRatio 1.33
 #define maxWheelRPM 300
 #define maxMotRPM 468
 #define maxPWM 255
@@ -28,6 +23,7 @@ DATASTRUCT mydata;
 #define Angle4 315  //
 #define RadiusOmniDrive 0.35  //metre
 #define RadiusOmniWheel 0.075 //metre
+#define RadiusXYWheel 0.029 //metre
 #define VelocityToRPM(x) x*60/(2*pi*RadiusOmniWheel)
 /*********************************************************************************************************************************************/
 /*********************************************************** Wheels **********************************************************************************/
@@ -44,13 +40,13 @@ class Wheel{
 
 };
  
- Wheel Wheel1 = {0.0, 0.0, Angle1, maxWheelRPM, 0, 0, 0 };
+ Wheel Wheel1 = {0.0, 0.0, Angle4, maxWheelRPM, 0, 0, 0 };
  
- Wheel Wheel2 = {0.0, 0.0, Angle2, maxWheelRPM, 0, 0, 0 };
+ Wheel Wheel2 = {0.0, 0.0, Angle3, maxWheelRPM, 0, 0, 0 };
  
- Wheel Wheel3 = {0.0, 0.0, Angle3, maxWheelRPM, 0, 0, 0 };
+ Wheel Wheel3 = {0.0, 0.0, Angle2, maxWheelRPM, 0, 0, 0 };
 
- Wheel Wheel4 = {0.0, 0.0, Angle4, maxWheelRPM, 0, 0, 0 };
+ Wheel Wheel4 = {0.0, 0.0, Angle1, maxWheelRPM, 0, 0, 0 };
  
  Wheel *pWheel[4]={&Wheel1,&Wheel2,&Wheel3,&Wheel4};
 
@@ -70,10 +66,10 @@ class Wheel{
    }
 };
 
-  Encoder xencoder={18,19,2000,0,0,0};  
+  Encoder xencoder={18,19,1000,0,0,0};  
   Encoder *pEncoderX=&xencoder;
   
-  Encoder yencoder={21,20,2000,0,0,0};   //1000 ppr
+  Encoder yencoder={20,49,1000,0,0,0};   //1000 ppr
   Encoder *pEncoderY=&yencoder;
   
   void returnCountX();
@@ -109,9 +105,9 @@ float sine_X = 0;
 
 void setup() {
   Serial.begin(9600);
-  UsartSerial.begin(9600);
+  UpperLowerSerial.begin(9600);
   
-  ET.begin(details(mydata), &UsartSerial);
+  ET.begin(details(mydata), &UpperLowerSerial);
   
   for(int k =0;k<4;k++)
   pWheel[k]->rpm=0;
@@ -122,18 +118,17 @@ void setup() {
   pEncoderY->initEncoder();
   attachInterrupt(digitalPinToInterrupt(pEncoderY->channel1),returnCountY,RISING);
   
-  TransmitURPM(pWheel);
+  TransmitURPM();
   interrupts();
   
 }
 
 void loop() {
-  //calculateSpeed(0, 45, 1);
-  //TransmitURPM(pWheel);
- Serial.println("Y "+String((int)pEncoderX->Count));
- //Serial.println("x "+String((int)pEncoderX->Count));
-  //Serial.println("Y "+String(digitalRead(pEncoderY->channel2)));
- // Serial.println("X "+String(digitalRead(pEncoderX->channel2)));
+   getBotPosition();
+   Goto_XYSigmoid(0.0,0.0,-2.0,-2.0,10);  //speed in m/s
+   //TraceCircle_discrete(1,0.3);
+   TransmitURPM();
+   //Serial3.write('a');
 }
 
 void returnCountX()
@@ -147,8 +142,8 @@ void returnCountX()
 void returnCountY()
 {
     if(digitalRead(pEncoderY->channel2))
-     pEncoderY->Count--;
-    else 
      pEncoderY->Count++;
+    else 
+     pEncoderY->Count--;
 }
 

@@ -2,6 +2,10 @@
 #include <DueTimer.h>
 #include <DuePWM.h>
 
+#ifndef TunePID
+#define TunePID 
+#endif
+
 #define TimerEncoder Timer1
 #define maxWheelRPM 300
 #define maxMotRPM 468
@@ -13,13 +17,30 @@
 #define GearRatio 40.0/35.0
 #define GearRatio_dash  40.0/27.0 
 #define pi 3.14159263
+#define PWM_FREQ1 2500
+DuePWM pwm(PWM_FREQ1, 3000);
 
-EasyTransfer ET;
+EasyTransfer ETpid,ETrpm,ET;
 struct DATASTRUCT{
   int16_t rpm[4];
 }; 
 DATASTRUCT mydata;
-#define UsartSerial Serial3
+
+struct PID_data{
+  float Kp[4];
+  float Ki[4];
+  float Kd[4];
+};
+
+struct RPM_data{
+  int16_t rpm[4];
+};
+
+PID_data pid_data;
+RPM_data rpm_data;
+//DATASTRUCT mydata;
+#define BTSerial Serial1
+#define UpperLowerSerial Serial2
 
 class Encoder
 {
@@ -61,20 +82,20 @@ class Motor{
     pinMode(pwmPin,OUTPUT);
     pinMode(direction2,OUTPUT);
   }
-  void driveMotor(float op,float maxvalue);
+  void driveMotorPID(float op,int maxvalue);
 };
 
 
   Motor motor1={23,29,8};
   Motor *pMotor1=&motor1;
 
-  Motor motor2={27,25,7};
+  Motor motor2={25,27,7};
   Motor *pMotor2=&motor2;
 
-  Motor motor3={39,37,9};
+  Motor motor3={37,39,6};
   Motor *pMotor3=&motor3;
   
-  Motor motor4={31, 15, 18};
+  Motor motor4={31,15,9};
   Motor *pMotor4=&motor4;
   
   Motor *pMotor[4]={&motor1,&motor2,&motor3,&motor4};
@@ -82,12 +103,13 @@ class Motor{
  /*********************************************************************************************************************************************/
  /******************************************************       PID          ***************************************************************************************/
 class PID{
+  public: 
    float Kp;
    float Kd;
    float Ki;
    float maxControl;
    float minControl;
-  public:
+  
    float required;
    float prevRequired;
    float error;
@@ -140,10 +162,19 @@ float output[4];
 void setup() {  
   
   Serial.begin(9600);
-  UsartSerial.begin(9600);
-  ET.begin(details(mydata), &UsartSerial);
+  UpperLowerSerial.begin(9600);
+  
+  ET.begin(details(mydata), &UpperLowerSerial);
+  BTSerial.begin(38400);
+  ETpid.begin(details(pid_data),&BTSerial);
+  ETrpm.begin(details(rpm_data),&BTSerial);
   for(int i=0;i<4;++i)
     pMotor[i]->initMotor();
+
+  pwm.setFreq1(PWM_FREQ1);
+ 
+  for(int i=0;i<4;++i)
+  pwm.pinFreq1(pMotor[i]->pwmPin);
   
   for(int i = 0;i<4;++i)
     pEncoder[i]->initEncoder();
@@ -153,25 +184,42 @@ void setup() {
   attachInterrupt(pEncoder3->channel1,returnCount3,RISING);
   attachInterrupt(pEncoder4->channel1,returnCount4,RISING);
 
-  pPIDMotor1->initPID(0.1,0,0,0,-maxMotRPM,maxMotRPM);
-  pPIDMotor2->initPID(0.1,0,0,0,-maxMotRPM,maxMotRPM);    
-  pPIDMotor3->initPID(0.1,0,0,0,-maxMotRPM,maxMotRPM);
-  pPIDMotor4->initPID(0.1,0,0,0,-maxMotRPM,maxMotRPM);
+  pPIDMotor1->initPID(1.5,0,0,0,-maxMotRPM,maxMotRPM);
+  pPIDMotor2->initPID(1.5,0,0,0,-maxMotRPM,maxMotRPM);    
+  pPIDMotor3->initPID(1.5,0,0,0,-maxMotRPM,maxMotRPM);
+  pPIDMotor4->initPID(1.5,0,0,0,-maxMotRPM,maxMotRPM);
   
   TimerEncoder.attachInterrupt(timerHandler);
   TimerEncoder.start( 1000000 * EncoderTime );
+  for(int i=0;i<4;++i)
+  rpm_data.rpm[i] = i*10;
+  
 }
 
-void loop() {
-  for(int i=0;i<4;++i)
-{  pPIDMotor[i]->required = 100;
-  pPIDMotor[i]->prevRequired = pPIDMotor[i]->required;
-}  
-  //getUpperData();
- // Serial.println((int)pEncoder[0]->Count);
-  //Serial.println((int)pEncoder[1]->Count);
- // Serial.println(pEncoder[2]->rpm);
-  //Serial.println((int)pEncoder[3]->Count);
+void loop() {  
+  getUpperData();
+  RPMtoBT();
+ // PIDfromBT();
+  /*ETrpm.sendData();
+  if(ETpid.receiveData()>0)
+  { 
+    for(int i=0;i<4;++i)
+    {
+      Serial.println(i+1);
+      float kp = pid_data.Kp[i];
+      float ki = pid_data.Ki[i];
+      float kd = pid_data.Kd[i];
+      Serial.println("Kp "+String(kp));
+      Serial.println("Ki "+String(ki));
+      Serial.println("Kd "+String(kd));
+      Serial.println(" ");
+    }
+  }*/
+//  #ifdef TunePID
+//  RPMtoBT();
+//  PIDfromBT();
+//  #endif
+
 }
 
 void timerHandler()
@@ -198,11 +246,19 @@ void timerHandler()
   output[i]=0;
 
   for(int i=0;i<n;++i)
-  pMotor[i]->driveMotor(output[i],maxMotRPM);
-
+  //pMotor[i]->driveMotorPID(output[i],maxMotRPM);
+  driveMotorReq(output[i], maxMotRPM/2, pPIDMotor[i],pMotor[i]);
+  
   for(int i=0;i<n;++i)
   pEncoder[i]->prevCount=pEncoder[i]->Count;
 
-  //Serial.println((int)pEncoder[1]->Count);
+ //Serial.println((int)pEncoder[1]->Count);
 }
-
+//
+//#ifdef TunePID
+//void serialEvent()
+//{
+//  while(ETpid.receiveData()>0)
+//  
+//}
+//#endif

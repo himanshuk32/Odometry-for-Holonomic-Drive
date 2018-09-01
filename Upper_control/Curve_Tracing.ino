@@ -17,9 +17,8 @@ void Goto_XYHard( float x1,float y1,float x2,float y2,float V0)
 
   if( r > r0 - tolerance && r < r0 + tolerance )
   pBot->vel = 0;
-  
-  if(printLineAngleSpeed)
-  Serial.println(" Angle "+ String(RadianToDegree(pBot->Angle))+ " Speed "+String(pBot->vel));
+
+  calculateSpeed(0 ,pBot->Angle ,pBot->vel);
 }
 
 void Goto_XYSigmoid( float x1,float y1,float x2,float y2,float V0)
@@ -31,9 +30,7 @@ void Goto_XYSigmoid( float x1,float y1,float x2,float y2,float V0)
   float r0 = dist ( x1, y1, x2, y2 );
 
   pBot->vel = V0 * trapezoid_sigmoid (r , r0); 
-
-  if(printLineAngleSpeed)
-  Serial.println(" Angle "+ String(RadianToDegree(pBot->Angle))+ " Speed "+String(pBot->vel));
+  calculateSpeed(0 ,pBot->Angle ,pBot->vel);
 }
 
 void Goto_XYTimed(float x1, float y1, float x2, float y2, float V0, long long int currentTime)
@@ -52,19 +49,12 @@ void TraceCircle_discrete(float radius, float V0)
 {
   Goto_XYHard ( radius*cos( Circle_theta ) , radius + radius*sin( Circle_theta ), radius*cos( Circle_theta + 0.01 ) , radius + radius*sin( Circle_theta + 0.01 ) , V0 ); 
   Circle_theta+= 0.01 ;
-
-  if(printCircleAngleSpeed)
-  Serial.println(" Angle "+ String(RadianToDegree(pBot->Angle))+ " Speed "+String(pBot->vel));
-
 }
 
 void TraceCircle_pos(float radius, float V0)
 {
   float theta = - angle( pBot->X_pos , pBot->Y_pos - radius , 0, 0 );
   calculateSpeed(0, theta , V0);
-
-  if(printCircleAngleSpeed)
-  Serial.println(" Angle "+ String(RadianToDegree(pBot->Angle))+ " Speed "+String(pBot->vel)); 
 }
 
 void TraceCircle_time(float radius, int omega, long long int currentTime)
@@ -90,7 +80,7 @@ void TraceSine_discrete(float amplitude, float frequency, float V0)  //not gonna
 {
   float delta_x = frequency;
   Goto_XYHard ( sine_X , amplitude* sin(sine_X), sine_X + delta_x , amplitude* sin(sine_X + delta_x), V0 ); 
-  sine_X+= delta_x;
+  sine_X += delta_x;
 }
 
 void TraceSine_pos(float amplitude,float V)  
