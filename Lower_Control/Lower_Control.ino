@@ -20,7 +20,7 @@
 #define PWM_FREQ1 2500
 DuePWM pwm(PWM_FREQ1, 3000);
 
-EasyTransfer ETpid,ETrpm,ET;
+EasyTransfer ETpid, ETrpm, ET;
 struct DATASTRUCT{
   int16_t rpm[4];
 }; 
@@ -33,12 +33,12 @@ struct PID_data{
 };
 
 struct RPM_data{
-  int16_t rpm[4];
+  float rpm[4];
 };
 
 PID_data pid_data;
 RPM_data rpm_data;
-//DATASTRUCT mydata;
+
 #define BTSerial Serial1
 #define UpperLowerSerial Serial2
 
@@ -191,35 +191,24 @@ void setup() {
   
   TimerEncoder.attachInterrupt(timerHandler);
   TimerEncoder.start( 1000000 * EncoderTime );
-  for(int i=0;i<4;++i)
-  rpm_data.rpm[i] = i*10;
+
+  pPIDMotor[0]->required = 200;
+  pPIDMotor[1]->required = -200;
+  pPIDMotor[2]->required = -200;
+  pPIDMotor[3]->required = 200;
   
 }
 
 void loop() {  
-  getUpperData();
+  //getUpperData();
+  
+  #ifdef TunePID
+  StopUsingBT();
   RPMtoBT();
- // PIDfromBT();
-  /*ETrpm.sendData();
-  if(ETpid.receiveData()>0)
-  { 
-    for(int i=0;i<4;++i)
-    {
-      Serial.println(i+1);
-      float kp = pid_data.Kp[i];
-      float ki = pid_data.Ki[i];
-      float kd = pid_data.Kd[i];
-      Serial.println("Kp "+String(kp));
-      Serial.println("Ki "+String(ki));
-      Serial.println("Kd "+String(kd));
-      Serial.println(" ");
-    }
-  }*/
-//  #ifdef TunePID
-//  RPMtoBT();
-//  PIDfromBT();
-//  #endif
-
+  PIDfromBT();
+  
+  #endif
+  //Serial.println(pPIDMotor[3]->required);
 }
 
 void timerHandler()
@@ -227,7 +216,6 @@ void timerHandler()
   int n=4;
   for(int i=0;i<4;++i)
   pEncoder[i]->rpm=((pEncoder[i]->Count - pEncoder[i]->prevCount) * 60.0)/(EncoderTime * pEncoder[i]->gearRatio * pEncoder[i]->ppr);
-  
   for(int i=0;i<n;++i)
   {
     if(pPIDMotor[i]->required * pPIDMotor[i]->prevRequired>0)
@@ -246,8 +234,8 @@ void timerHandler()
   output[i]=0;
 
   for(int i=0;i<n;++i)
-  //pMotor[i]->driveMotorPID(output[i],maxMotRPM);
-  driveMotorReq(output[i], maxMotRPM/2, pPIDMotor[i],pMotor[i]);
+  pMotor[i]->driveMotorPID(output[i],maxMotRPM);
+  //driveMotorReq(output[i], maxMotRPM/2, pPIDMotor[i],pMotor[i]);
   
   for(int i=0;i<n;++i)
   pEncoder[i]->prevCount=pEncoder[i]->Count;

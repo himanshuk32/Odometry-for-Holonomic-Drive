@@ -31,11 +31,11 @@ void PIDfromBT()
 {
  if(ETpid.receiveData()>0)
   {
-    pBot->X_pos = 0;
-    pBot->Y_pos = 0;
     for(int i=0;i<4;++i)
     {
-      Serial.println(pid_data.Kp[i]);
+      Serial.print(i+1);
+      Serial.println(" Kp "+String(pid_data.Kp[i]));
+      Serial.println(" ");
       pPIDMotor[i]->Kp = pid_data.Kp[i];
       pPIDMotor[i]->Kd = pid_data.Kd[i];
       pPIDMotor[i]->Ki = pid_data.Ki[i];
@@ -43,5 +43,20 @@ void PIDfromBT()
     }
   }
 
+}
+
+void StopUsingBT()
+{
+  if(BTSerial.available())
+  {
+    char stopButton = BTSerial.read();
+    if(stopButton == 's')
+    for(int i=0;i<4;++i)
+    {
+      pMotor[i]->driveMotorPID(0,maxMotRPM);
+      pPIDMotor[i]->required = 0;
+    }
+    Serial.println("Stopped");
+  }
 }
 

@@ -125,10 +125,8 @@ void setup() {
 
 void loop() {
    getBotPosition();
-   Goto_XYSigmoid(0.0,0.0,-2.0,-2.0,10);  //speed in m/s
-   //TraceCircle_discrete(1,0.3);
+   Goto_XYSigmoid(0.0,0.0,3.0,0.0,5);  //speed in m/s
    TransmitURPM();
-   //Serial3.write('a');
 }
 
 void returnCountX()
