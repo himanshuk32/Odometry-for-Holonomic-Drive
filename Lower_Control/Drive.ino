@@ -1,8 +1,5 @@
  void Motor::driveMotorPID(float op, int maxval)
 { 
-  
-//  if(printPIDOutput)
-  //Serial.println(" PID Output "+String(op));
       
   if(op>maxval)
   op=maxval;

@@ -2,9 +2,9 @@
 #include <DueTimer.h>
 #include <DuePWM.h>
 
-#ifndef TunePID
-#define TunePID 
-#endif
+//#ifndef TunePID
+//#define TunePID 
+//#endif
 
 #define TimerEncoder Timer1
 #define maxWheelRPM 300
@@ -19,6 +19,7 @@
 #define pi 3.14159263
 #define PWM_FREQ1 2500
 DuePWM pwm(PWM_FREQ1, 3000);
+
 
 EasyTransfer ETpid, ETrpm, ET;
 struct DATASTRUCT{
@@ -52,10 +53,10 @@ class Encoder
   volatile long long int prevCount;
   int rpm;
   float gearRatio;
-  
   void initEncoder(){
     pinMode(channel1,INPUT);
     pinMode(channel2,INPUT);
+    
    }
 };
 
@@ -156,8 +157,9 @@ class Auto_Bot{
 
   Auto_Bot FourWheelDrive; 
   Auto_Bot *pBot=&FourWheelDrive;
-  
+//////////////////////////////////////////////////Global variables****************************************************  
 float output[4];
+int debouncing = 0;
 
 void setup() {  
   
@@ -184,38 +186,34 @@ void setup() {
   attachInterrupt(pEncoder3->channel1,returnCount3,RISING);
   attachInterrupt(pEncoder4->channel1,returnCount4,RISING);
 
-  pPIDMotor1->initPID(1.5,0,0,0,-maxMotRPM,maxMotRPM);
-  pPIDMotor2->initPID(1.5,0,0,0,-maxMotRPM,maxMotRPM);    
-  pPIDMotor3->initPID(1.5,0,0,0,-maxMotRPM,maxMotRPM);
-  pPIDMotor4->initPID(1.5,0,0,0,-maxMotRPM,maxMotRPM);
+  pPIDMotor1->initPID(2.5,0,0,0,-maxMotRPM,maxMotRPM);
+  pPIDMotor2->initPID(8.0,0,0.01,0,-maxMotRPM,maxMotRPM);    
+  pPIDMotor3->initPID(2.5,0,0,0,-maxMotRPM,maxMotRPM);
+  pPIDMotor4->initPID(8.0,0,0.01,0,-maxMotRPM,maxMotRPM);
   
   TimerEncoder.attachInterrupt(timerHandler);
   TimerEncoder.start( 1000000 * EncoderTime );
-
-  pPIDMotor[0]->required = 200;
-  pPIDMotor[1]->required = -200;
-  pPIDMotor[2]->required = -200;
-  pPIDMotor[3]->required = 200;
-  
+    
 }
 
 void loop() {  
-  //getUpperData();
+  getUpperData();
   
   #ifdef TunePID
-  StopUsingBT();
+  DirUsingBT(400);
   RPMtoBT();
   PIDfromBT();
-  
+  //NoCommunication();
   #endif
-  //Serial.println(pPIDMotor[3]->required);
-}
+  }
+
 
 void timerHandler()
 {
   int n=4;
   for(int i=0;i<4;++i)
   pEncoder[i]->rpm=((pEncoder[i]->Count - pEncoder[i]->prevCount) * 60.0)/(EncoderTime * pEncoder[i]->gearRatio * pEncoder[i]->ppr);
+  
   for(int i=0;i<n;++i)
   {
     if(pPIDMotor[i]->required * pPIDMotor[i]->prevRequired>0)
@@ -239,14 +237,4 @@ void timerHandler()
   
   for(int i=0;i<n;++i)
   pEncoder[i]->prevCount=pEncoder[i]->Count;
-
- //Serial.println((int)pEncoder[1]->Count);
 }
-//
-//#ifdef TunePID
-//void serialEvent()
-//{
-//  while(ETpid.receiveData()>0)
-//  
-//}
-//#endif
