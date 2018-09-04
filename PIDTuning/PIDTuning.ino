@@ -7,7 +7,7 @@ const int Forward = 23;
 const int Backward = 5;
 const int Left = 2;
 const int Right = 3;
-
+  
 EasyTransfer ETpid, ETrpm;
 
 struct RPM_data{
@@ -34,24 +34,24 @@ void setup() {
    pinMode(Right,INPUT_PULLUP);
    
     //WHEEL 1
-    pid_data.Kp[0]=2.5;
+    pid_data.Kp[0]=4.25;
     pid_data.Ki[0]=0;
-    pid_data.Kd[0]=0;
+    pid_data.Kd[0]=0.01;
 
     //WHEEL 2
-    pid_data.Kp[1]=8.0;     //8
+    pid_data.Kp[1]=8;     //8
     pid_data.Ki[1]=0.01;  //0.01
-    pid_data.Kd[1]=0;
+    pid_data.Kd[1]=0.08; //0.08
 
     //WHEEL 3
     pid_data.Kp[2]=2.5;
     pid_data.Ki[2]=0;
-    pid_data.Kd[2]=0;
+    pid_data.Kd[2]=0.01;
 
     //WHEEL 4
-    pid_data.Kp[3]=8.0;
-    pid_data.Ki[3]=0.01;
-    pid_data.Kd[3]=0;
+    pid_data.Kp[3]=7.8;//8.0;
+    pid_data.Ki[3]=0.01;//0.01;
+    pid_data.Kd[3]=0.07;//0.07;
 
       
 
@@ -68,7 +68,7 @@ void loop(){
 //      {
 //        Serial.print(i+1);
 //        Serial.println(" RPM " +String(rpm_data.rpm[i]));
-         Serial.println(rpm_data.rpm[2]);
+         Serial.println(rpm_data.rpm[0]);
     //  }
     }
       

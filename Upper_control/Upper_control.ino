@@ -125,7 +125,9 @@ void setup() {
 
 void loop() {
    getBotPosition();
-   Goto_XYSigmoid(0.0,0.0,3.0,0.0,5);  //speed in m/s
+   //Goto_XYSigmoid(0.0,0.0,3.0,3.0,5);  //speed in m/s
+   //TraceCircle_discrete(0.5,1);
+   Goto_XYHard(0.0,0.0,0.0,3.0,2);
    TransmitURPM();
 }
 

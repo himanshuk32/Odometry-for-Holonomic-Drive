@@ -186,21 +186,27 @@ void setup() {
   attachInterrupt(pEncoder3->channel1,returnCount3,RISING);
   attachInterrupt(pEncoder4->channel1,returnCount4,RISING);
 
-  pPIDMotor1->initPID(2.5,0,0,0,-maxMotRPM,maxMotRPM);
-  pPIDMotor2->initPID(8.0,0,0.01,0,-maxMotRPM,maxMotRPM);    
-  pPIDMotor3->initPID(2.5,0,0,0,-maxMotRPM,maxMotRPM);
-  pPIDMotor4->initPID(8.0,0,0.01,0,-maxMotRPM,maxMotRPM);
+  pPIDMotor1->initPID(4.25,0,0.01,0,-maxMotRPM,maxMotRPM);
+  pPIDMotor2->initPID(8.0,0.08,0.01,0,-maxMotRPM,maxMotRPM);    
+  pPIDMotor3->initPID(2.5,0.01,0,0,-maxMotRPM,maxMotRPM);
+  pPIDMotor4->initPID(7.8,0.07,0.01,0,-maxMotRPM,maxMotRPM);
   
   TimerEncoder.attachInterrupt(timerHandler);
   TimerEncoder.start( 1000000 * EncoderTime );
-    
+  #ifdef TunePID
+    float rpm=350;
+    pPIDMotor[0]->required = -rpm;
+    pPIDMotor[1]->required = rpm;
+    pPIDMotor[2]->required = rpm;
+    pPIDMotor[3]->required = -rpm;
+  #endif
 }
 
 void loop() {  
   getUpperData();
   
   #ifdef TunePID
-  DirUsingBT(400);
+  DirUsingBT(350);
   RPMtoBT();
   PIDfromBT();
   //NoCommunication();
